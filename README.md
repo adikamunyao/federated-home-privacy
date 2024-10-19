@@ -1,8 +1,4 @@
 # SmartHomePrivacy-FTL
-Implementation of a Federated Transfer Learning (FTL) model to enhance privacy in smart home communications. This project explores decentralized data processing techniques to protect user data within the IoT ecosystem, aiming to mitigate privacy risks associated with centralized data processing models."
-
-
-# SmartHomePrivacy-FTL
 
 ## Project Overview
 
