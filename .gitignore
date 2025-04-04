@@ -20,3 +20,8 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+Docs/
+two.ipynb
+red_env/
+find_venvs.py

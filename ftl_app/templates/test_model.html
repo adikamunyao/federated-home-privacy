@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h1>Test FTL Model</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label>Number of Rounds: <input type="number" name="num_rounds" value="5"></label><br>
+        <label>Number of Devices: <input type="number" name="num_devices" value="3"></label><br>
+        <label>Noise Multiplier: <input type="number" step="0.1" name="noise_multiplier" value="1.1"></label><br>
+        <label>Mode: 
+            <select name="mode">
+                <option value="live">Live</option>
+                <option value="precomputed">Precomputed</option>
+            </select>
+        </label><br>
+        <button type="submit">Run Simulation</button>
+    </form>
+    
+    {% if accuracy %}
+        <h2>Results</h2>
+        <p>Accuracy: {{ accuracy|last|floatformat:4 }}</p>
+        <p>Loss: {{ loss|last|floatformat:4 }}</p>
+        <p>Privacy Leakage: {{ leakage|last|floatformat:4 }}</p>
+        <p>Latency: {{ latency|last|floatformat:2 }}s</p>
+        <p>Differential Privacy Epsilon: {{ epsilon|last|floatformat:2 }}</p>
+        <p>Inference Attack Success: {{ attack_success|floatformat:4 }}</p>
+        
+        <canvas id="resultsChart" width="800" height="400"></canvas>
+        <script>
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: {{ num_rounds }},}, (_, i) => i + 1),
+                    datasets: [
+                        { label: 'Accuracy', data: {{ accuracy|json_script:"accuracy" }}, borderColor: 'blue' },
+                        { label: 'Loss', data: {{ loss|json_script:"loss" }}, borderColor: 'red' },
+                        { label: 'Leakage', data: {{ leakage|json_script:"leakage" }}, borderColor: 'green' },
+                        { label: 'Latency', data: {{ latency|json_script:"latency" }}, borderColor: 'purple' },
+                        { label: 'Epsilon', data: {{ epsilon|json_script:"epsilon" }}, borderColor: 'orange' }
+                    ]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+        </script>
+    {% endif %}
+{% endblock %}
