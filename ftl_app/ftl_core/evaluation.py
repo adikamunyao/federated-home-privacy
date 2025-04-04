@@ -1,9 +1,10 @@
+# ftl_app/ftl_core/evaluation.py
 import numpy as np
 import tensorflow as tf
 from .data_generator import generate_synthetic_data
+from .ftl_model import create_local_model
 
 def simulate_inference_attack(num_devices=3):
-    """Simulate inference attack to test privacy robustness."""
     data = generate_synthetic_data(num_devices)
     model = create_local_model()
     model.load_weights('ftl_app/precomputed/weights/global_model.h5')

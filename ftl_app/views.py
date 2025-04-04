@@ -1,8 +1,5 @@
+# ftl_app/views.py
 from django.shortcuts import render
-
-# Create your views here.
-from django.shortcuts import render
-from django.http import JsonResponse
 from .ftl_core.ftl_model import run_ftl_simulation
 from .ftl_core.evaluation import simulate_inference_attack
 from .models import SimulationResult
@@ -23,7 +20,6 @@ def test_model(request):
             noise_multiplier=noise_multiplier, precomputed=(mode == 'precomputed')
         )
         
-        # Save results
         result = SimulationResult(
             num_rounds=num_rounds, num_devices=num_devices, noise_multiplier=noise_multiplier,
             accuracy=json.dumps(accuracy), loss=json.dumps(loss), 
@@ -31,13 +27,12 @@ def test_model(request):
         )
         result.save()
         
-        # Simulate attack
         attack_success = simulate_inference_attack(num_devices)
         
         context = {
             'accuracy': accuracy, 'loss': loss, 'leakage': leakage, 'latency': latency,
             'epsilon': epsilon, 'attack_success': attack_success, 'num_rounds': num_rounds,
-            'num_devices': num_devices, 'noise_multiplier': noise_multiplier
+            'num_devices': num_devices, 'noise_multiplier': noise_multiplier, 'mode': mode
         }
         return render(request, 'test_model.html', context)
     return render(request, 'test_model.html')
