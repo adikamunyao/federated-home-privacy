@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository contains the implementation of a Federated Transfer Learning (FTL) model aimed at enhancing privacy in smart home communications. The project is part of a Master's thesis by Zaddy Newtons Maraga, focusing on decentralized data processing techniques to protect user data in the Internet of Things (IoT) ecosystem. By utilizing FTL, this project seeks to address privacy concerns associated with centralized data processing models commonly used in smart homes.
+This repository contains the implementation of a Federated Transfer Learning (FTL) model aimed at enhancing privacy in smart home communications. Focusing on decentralized data processing techniques to protect user data in the Internet of Things (IoT) ecosystem. By utilizing FTL, this project seeks to address privacy concerns associated with centralized data processing models commonly used in smart homes.
 
 ## Project Structure
 
