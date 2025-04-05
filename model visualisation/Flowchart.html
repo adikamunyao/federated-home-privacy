@@ -1,0 +1,89 @@
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; }
+  .chart { margin: 20px; }
+  .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+  .line { fill: none; stroke-width: 2px; }
+  .bar { fill: steelblue; }
+</style>
+
+<div id="model-structure" class="chart"></div>
+<script>
+const modelData = [
+  { id: "global", label: "Global Model (Server)", x: 300, y: 50 },
+  { id: "local1", label: "Local Model 1 (Thermostat)", x: 100, y: 200 },
+  { id: "local2", label: "Local Model 2 (Camera)", x: 250, y: 200 },
+  { id: "local3", label: "Local Model 3 (Lock)", x: 400, y: 200 },
+  { id: "local4", label: "Local Model 4 (Light)", x: 550, y: 200 }
+];
+
+const links = [
+  { source: "global", target: "local1" },
+  { source: "global", target: "local2" },
+  { source: "global", target: "local3" },
+  { source: "global", target: "local4" },
+  { source: "local1", target: "global" },
+  { source: "local2", target: "global" },
+  { source: "local3", target: "global" },
+  { source: "local4", target: "global" }
+];
+
+const svgModel = d3.select("#model-structure")
+  .append("svg")
+  .attr("width", 700)
+  .attr("height", 300);
+
+svgModel.append("defs").append("marker")
+  .attr("id", "arrow")
+  .attr("viewBox", "0 -5 10 10")
+  .attr("refX", 5)
+  .attr("refY", 0)
+  .attr("markerWidth", 6)
+  .attr("markerHeight", 6)
+  .attr("orient", "auto")
+  .append("path")
+  .attr("d", "M0,-5L10,0L0,5")
+  .attr("fill", "#999");
+
+const nodes = svgModel.selectAll(".node")
+  .data(modelData)
+  .enter()
+  .append("g")
+  .attr("class", "node");
+
+nodes.append("rect")
+  .attr("x", d => d.x - 80)
+  .attr("y", d => d.y - 20)
+  .attr("width", 160)
+  .attr("height", 40)
+  .attr("fill", d => d.id === "global" ? "#FFD700" : "#87CEEB")
+  .attr("stroke", "#000");
+
+nodes.append("text")
+  .attr("x", d => d.x)
+  .attr("y", d => d.y + 5)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "12px")
+  .text(d => d.label);
+
+const link = svgModel.selectAll(".link")
+  .data(links)
+  .enter()
+  .append("path")
+  .attr("class", "link")
+  .attr("d", d => {
+    const source = modelData.find(n => n.id === d.source);
+    const target = modelData.find(n => n.id === d.target);
+    return `M${source.x},${source.y + 20} L${target.x},${target.y - 20}`;
+  })
+  .attr("stroke", "#999")
+  .attr("stroke-width", 1)
+  .attr("marker-end", "url(#arrow)");
+
+svgModel.append("text")
+  .attr("x", 350)
+  .attr("y", 20)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "16px")
+  .text("FTL Model Structure");
+</script>

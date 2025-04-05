@@ -1,0 +1,96 @@
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; }
+  .chart { margin: 20px; }
+  .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+  .line { fill: none; stroke-width: 2px; }
+  .bar { fill: steelblue; }
+</style>
+
+<div id="system-architecture" class="chart"></div>
+<script>
+const archData = [
+  { id: "server", label: "Central Server\n(Global Model, FedAvg)", x: 500, y: 150 },
+  { id: "device1", label: "Device 1 (Thermostat)", x: 100, y: 100 },
+  { id: "device2", label: "Device 2 (Camera)", x: 100, y: 200 },
+  { id: "device3", label: "Device 3 (Lock)", x: 100, y: 300 }
+];
+
+const archLinks = [
+  { source: "server", target: "device1", label: "Global Model" },
+  { source: "server", target: "device2", label: "Global Model" },
+  { source: "server", target: "device3", label: "Global Model" },
+  { source: "device1", target: "server", label: "Encrypted Updates" },
+  { source: "device2", target: "server", label: "Encrypted Updates" },
+  { source: "device3", target: "server", label: "Encrypted Updates" }
+];
+
+const svgArch = d3.select("#system-architecture")
+  .append("svg")
+  .attr("width", 700)
+  .attr("height", 400);
+
+svgArch.append("defs").append("marker")
+  .attr("id", "arrow-arch")
+  .attr("viewBox", "0 -5 10 10")
+  .attr("refX", 5)
+  .attr("refY", 0)
+  .attr("markerWidth", 6)
+  .attr("markerHeight", 6)
+  .attr("orient", "auto")
+  .append("path")
+  .attr("d", "M0,-5L10,0L0,5")
+  .attr("fill", "#999");
+
+const archNodes = svgArch.selectAll(".node")
+  .data(archData)
+  .enter()
+  .append("g");
+
+archNodes.append("rect")
+  .attr("x", d => d.x - 80)
+  .attr("y", d => d.y - 30)
+  .attr("width", 160)
+  .attr("height", 60)
+  .attr("fill", d => d.id === "server" ? "#FFD700" : "#87CEEB")
+  .attr("stroke", "#000");
+
+archNodes.append("text")
+  .attr("x", d => d.x)
+  .attr("y", d => d.y)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "12px")
+  .attr("dy", ".35em")
+  .text(d => d.label.split("\n")[0])
+  .append("tspan")
+  .attr("x", d => d.x)
+  .attr("dy", "1.2em")
+  .text(d => d.label.split("\n")[1] || "");
+
+const archLink = svgArch.selectAll(".link")
+  .data(archLinks)
+  .enter()
+  .append("path")
+  .attr("d", d => {
+    const source = archData.find(n => n.id === d.source);
+    const target = archData.find(n => n.id === d.target);
+    return d.source === "server" 
+      ? `M${source.x - 80},${source.y} L${target.x + 80},${target.y}`
+      : `M${source.x + 80},${source.y} L${target.x - 80},${target.y}`;
+  })
+  .attr("stroke", "#999")
+  .attr("stroke-width", 1)
+  .attr("marker-end", "url(#arrow-arch)");
+
+archLink.append("text")
+  .attr("dy", -5)
+  .attr("text-anchor", "middle")
+  .text(d => d.label);
+
+svgArch.append("text")
+  .attr("x", 350)
+  .attr("y", 20)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "16px")
+  .text("FTL System Architecture");
+</script>

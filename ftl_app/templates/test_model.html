@@ -1,5 +1,6 @@
 <!-- ftl_app/templates/test_model.html -->
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
     <h1>Test FTL Model</h1>
     <form method="post">
@@ -15,7 +16,7 @@
         </label><br>
         <button type="submit">Run Simulation</button>
     </form>
-    
+
     {% if accuracy %}
         <h2>Results</h2>
         <p>Accuracy: {{ accuracy|last|floatformat:4 }}</p>
@@ -24,23 +25,250 @@
         <p>Latency: {{ latency|last|floatformat:2 }}s</p>
         <p>Differential Privacy Epsilon: {{ epsilon|last|floatformat:2 }}</p>
         <p>Inference Attack Success: {{ attack_success|floatformat:4 }}</p>
-        
-        <canvas id="resultsChart" width="800" height="400"></canvas>
+
+        <!-- Visualization Containers -->
+        <div id="model-structure" class="chart"></div>
+        <div id="system-architecture" class="chart"></div>
+        <div id="chart-controls">
+            <button id="btn-acc-loss">Accuracy & Loss</button>
+            <button id="btn-privacy">Privacy Metrics</button>
+            <button id="btn-latency">Latency</button>
+        </div>
+        <div id="results-chart" class="chart"></div>
+
+        <!-- D3.js Script -->
+        <script src="https://d3js.org/d3.v7.min.js"></script>
         <script>
-            const ctx = document.getElementById('resultsChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Array.from({length: {{ num_rounds }},}, (_, i) => i + 1),
-                    datasets: [
-                        { label: 'Accuracy', data: {{ accuracy|json_script:"accuracy" }}, borderColor: 'blue' },
-                        { label: 'Loss', data: {{ loss|json_script:"loss" }}, borderColor: 'red' },
-                        { label: 'Leakage', data: {{ leakage|json_script:"leakage" }}, borderColor: 'green' },
-                        { label: 'Latency', data: {{ latency|json_script:"latency" }}, borderColor: 'purple' },
-                        { label: 'Epsilon', data: {{ epsilon|json_script:"epsilon" }}, borderColor: 'orange' }
-                    ]
-                },
-                options: { scales: { y: { beginAtZero: true } } }
+            // Inline CSS for simplicity
+            const styles = `
+                body { font-family: Arial, sans-serif; }
+                .chart { margin: 20px; }
+                .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+                .line { fill: none; stroke-width: 2px; }
+                .bar { fill: steelblue; }
+                #chart-controls button { margin: 5px; padding: 5px 10px; cursor: pointer; }
+            `;
+            const styleSheet = document.createElement("style");
+            styleSheet.textContent = styles;
+            document.head.appendChild(styleSheet);
+
+            // Chart Setup
+            const width = 800, height = 400;
+            const margin = { top: 20, right: 80, bottom: 50, left: 50 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            // Fetch metrics from the fixed location
+            d3.json("{% static 'ftl_app/precomputed/metrics.json' %}", function(error, data) {
+                if (error) {
+                    console.error("Error loading metrics.json:", error);
+                    return;
+                }
+
+                const rounds = Array.from({ length: data.accuracy.length }, (_, i) => i + 1);
+                const svg = d3.select("#results-chart")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                const x = d3.scaleLinear().domain([1, rounds.length]).range([0, chartWidth]);
+
+                // Function to update chart based on button click
+                function updateChart(type) {
+                    svg.selectAll("*").remove();
+
+                    svg.append("g")
+                        .attr("class", "axis")
+                        .attr("transform", `translate(0,${chartHeight})`)
+                        .call(d3.axisBottom(x).ticks(rounds.length))
+                        .append("text")
+                        .attr("fill", "#000")
+                        .attr("x", chartWidth / 2)
+                        .attr("y", 40)
+                        .attr("text-anchor", "middle")
+                        .text("Rounds");
+
+                    if (type === "acc-loss") {
+                        const y1 = d3.scaleLinear().domain([0, d3.max(data.accuracy) * 1.2]).range([chartHeight, 0]);
+                        const y2 = d3.scaleLinear().domain([0, d3.max(data.loss) * 1.2]).range([chartHeight, 0]);
+
+                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y1))
+                            .append("text")
+                            .attr("fill", "#000").attr("transform", "rotate(-90)")
+                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
+                            .text("Accuracy");
+
+                        svg.append("g").attr("class", "axis").attr("transform", `translate(${chartWidth},0)`)
+                            .call(d3.axisRight(y2))
+                            .append("text")
+                            .attr("fill", "#000").attr("transform", "rotate(-90)")
+                            .attr("y", -10).attr("dy", "-3em").attr("text-anchor", "end")
+                            .text("Loss");
+
+                        const lineAcc = d3.line().x((d, i) => x(rounds[i])).y(d => y1(d));
+                        const lineLoss = d3.line().x((d, i) => x(rounds[i])).y(d => y2(d));
+
+                        svg.append("path").datum(data.accuracy)
+                            .attr("class", "line").attr("stroke", "blue").attr("d", lineAcc);
+                        svg.append("path").datum(data.loss)
+                            .attr("class", "line").attr("stroke", "red").attr("d", lineLoss);
+
+                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
+                            .attr("text-anchor", "middle").attr("font-size", "16px")
+                            .text("Accuracy and Loss Over Rounds");
+                    } else if (type === "privacy") {
+                        const y1 = d3.scaleLinear().domain([0, d3.max(data.leakage) * 1.2]).range([chartHeight, 0]);
+                        const y2 = d3.scaleLinear().domain([0, d3.max(data.epsilon) * 1.2]).range([chartHeight, 0]);
+
+                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y1))
+                            .append("text")
+                            .attr("fill", "#000").attr("transform", "rotate(-90)")
+                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
+                            .text("Leakage");
+
+                        svg.append("g").attr("class", "axis").attr("transform", `translate(${chartWidth},0)`)
+                            .call(d3.axisRight(y2))
+                            .append("text")
+                            .attr("fill", "#000").attr("transform", "rotate(-90)")
+                            .attr("y", -10).attr("dy", "-3em").attr("text-anchor", "end")
+                            .text("Epsilon");
+
+                        const lineLeak = d3.line().x((d, i) => x(rounds[i])).y(d => y1(d));
+                        const lineEps = d3.line().x((d, i) => x(rounds[i])).y(d => y2(d));
+
+                        svg.append("path").datum(data.leakage)
+                            .attr("class", "line").attr("stroke", "green").attr("d", lineLeak);
+                        svg.append("path").datum(data.epsilon)
+                            .attr("class", "line").attr("stroke", "purple").attr("d", lineEps);
+
+                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
+                            .attr("text-anchor", "middle").attr("font-size", "16px")
+                            .text("Privacy Metrics Over Rounds");
+                    } else if (type === "latency") {
+                        const y = d3.scaleLinear().domain([0, d3.max(data.latency) * 1.2]).range([chartHeight, 0]);
+
+                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y))
+                            .append("text")
+                            .attr("fill", "#000").attr("transform", "rotate(-90)")
+                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
+                            .text("Latency (seconds)");
+
+                        svg.selectAll(".bar").data(data.latency).enter().append("rect")
+                            .attr("class", "bar")
+                            .attr("x", (d, i) => x(rounds[i]) - (chartWidth / rounds.length) / 2)
+                            .attr("y", d => y(d))
+                            .attr("width", chartWidth / rounds.length - 5)
+                            .attr("height", d => chartHeight - y(d));
+
+                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
+                            .attr("text-anchor", "middle").attr("font-size", "16px")
+                            .text("Latency Over Rounds");
+                    }
+                }
+
+                // Button event listeners
+                d3.select("#btn-acc-loss").on("click", () => updateChart("acc-loss"));
+                d3.select("#btn-privacy").on("click", () => updateChart("privacy"));
+                d3.select("#btn-latency").on("click", () => updateChart("latency"));
+
+                // Initial chart
+                updateChart("acc-loss");
+
+                // Model Structure Visualization
+                const modelSvg = d3.select("#model-structure").append("svg").attr("width", 700).attr("height", 300);
+                const modelData = [
+                    { id: "global", label: "Global Model (Server)", x: 350, y: 50 },
+                    { id: "local1", label: "Local Model 1 (Thermostat)", x: 150, y: 200 },
+                    { id: "local2", label: "Local Model 2 (Camera)", x: 300, y: 200 },
+                    { id: "local3", label: "Local Model 3 (Lock)", x: 450, y: 200 },
+                    { id: "local4", label: "Local Model 4 (Light)", x: 600, y: 200 }
+                ];
+                const modelLinks = [
+                    { source: "global", target: "local1" }, { source: "global", target: "local2" },
+                    { source: "global", target: "local3" }, { source: "global", target: "local4" },
+                    { source: "local1", target: "global" }, { source: "local2", target: "global" },
+                    { source: "local3", target: "global" }, { source: "local4", target: "global" }
+                ];
+                modelSvg.append("defs").append("marker").attr("id", "arrow").attr("viewBox", "0 -5 10 10")
+                    .attr("refX", 5).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6)
+                    .attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#999");
+
+                modelSvg.selectAll(".node").data(modelData).enter().append("g")
+                    .call(g => g.append("rect").attr("x", d => d.x - 80).attr("y", d => d.y - 20)
+                        .attr("width", 160).attr("height", 40)
+                        .attr("fill", d => d.id === "global" ? "#FFD700" : "#87CEEB").attr("stroke", "#000"))
+                    .call(g => g.append("text").attr("x", d => d.x).attr("y", d => d.y + 5)
+                        .attr("text-anchor", "middle").attr("font-size", "12px").text(d => d.label));
+
+                modelSvg.selectAll(".link").data(modelLinks).enter().append("path")
+                    .attr("d", d => {
+                        const s = modelData.find(n => n.id === d.source);
+                        const t = modelData.find(n => n.id === d.target);
+                        return `M${s.x},${s.y + 20} L${t.x},${t.y - 20}`;
+                    })
+                    .attr("stroke", "#999").attr("stroke-width", 1).attr("marker-end", "url(#arrow)");
+
+                modelSvg.append("text").attr("x", 350).attr("y", 20).attr("text-anchor", "middle")
+                    .attr("font-size", "16px").text("FTL Model Structure");
+
+                // System Architecture Visualization
+                const archSvg = d3.select("#system-architecture").append("svg").attr("width", 700).attr("height", 400);
+                const archData = [
+                    { id: "server", label: "Central Server\n(Global Model, FedAvg)", x: 500, y: 200 },
+                    { id: "device1", label: "Device 1 (Thermostat)", x: 100, y: 100 },
+                    { id: "device2", label: "Device 2 (Camera)", x: 100, y: 200 },
+                    { id: "device3", label: "Device 3 (Lock)", x: 100, y: 300 }
+                ];
+                const archLinks = [
+                    { source: "server", target: "device1", label: "Global Model" },
+                    { source: "server", target: "device2", label: "Global Model" },
+                    { source: "server", target: "device3", label: "Global Model" },
+                    { source: "device1", target: "server", label: "Encrypted Updates" },
+                    { source: "device2", target: "server", label: "Encrypted Updates" },
+                    { source: "device3", target: "server", label: "Encrypted Updates" }
+                ];
+                archSvg.append("defs").append("marker").attr("id", "arrow-arch").attr("viewBox", "0 -5 10 10")
+                    .attr("refX", 5).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6)
+                    .attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#999");
+
+                archSvg.selectAll(".node").data(archData).enter().append("g")
+                    .call(g => g.append("rect").attr("x", d => d.x - 80).attr("y", d => d.y - 30)
+                        .attr("width", 160).attr("height", 60)
+                        .attr("fill", d => d.id === "server" ? "#FFD700" : "#87CEEB").attr("stroke", "#000"))
+                    .call(g => g.append("text").attr("x", d => d.x).attr("y", d => d.y)
+                        .attr("text-anchor", "middle").attr("font-size", "12px").attr("dy", ".35em")
+                        .text(d => d.label.split("\n")[0])
+                        .append("tspan").attr("x", d => d.x).attr("dy", "1.2em")
+                        .text(d => d.label.split("\n")[1] || ""));
+
+                archSvg.selectAll(".link").data(archLinks).enter().append("g")
+                    .call(g => g.append("path")
+                        .attr("d", d => {
+                            const s = archData.find(n => n.id === d.source);
+                            const t = archData.find(n => n.id === d.target);
+                            return d.source === "server" 
+                                ? `M${s.x - 80},${s.y} L${t.x + 80},${t.y}`
+                                : `M${s.x + 80},${s.y} L${t.x - 80},${t.y}`;
+                        })
+                        .attr("stroke", "#999").attr("stroke-width", 1).attr("marker-end", "url(#arrow-arch)"))
+                    .call(g => g.append("text")
+                        .attr("x", d => {
+                            const s = archData.find(n => n.id === d.source);
+                            const t = archData.find(n => n.id === d.target);
+                            return (s.x + t.x) / 2;
+                        })
+                        .attr("y", d => {
+                            const s = archData.find(n => n.id === d.source);
+                            const t = archData.find(n => n.id === d.target);
+                            return (s.y + t.y) / 2 - 5;
+                        })
+                        .attr("text-anchor", "middle").attr("font-size", "10px")
+                        .text(d => d.label));
+
+                archSvg.append("text").attr("x", 350).attr("y", 20).attr("text-anchor", "middle")
+                    .attr("font-size", "16px").text("FTL System Architecture");
             });
         </script>
     {% endif %}
