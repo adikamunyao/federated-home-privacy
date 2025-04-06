@@ -1,7 +1,14 @@
 <!-- ftl_app/templates/index.html -->
 {% extends 'base.html' %}
 {% block content %}
-    <h1>Smart Home FTL Demo</h1>
-    <p>Enhancing privacy in smart home communications.</p>
-    <a href="{% url 'test_model' %}">Test the Model</a>
+    <div style="text-align: center; padding: 40px; background-color: #fff; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); margin-top: 40px;">
+        <h2 style="font-size: 32px; color: #333; font-weight: bold;">Welcome to the Smart Home Federated Learning Demo</h2>
+        <p style="font-size: 18px; color: #555; margin-top: 20px;">Enhancing privacy in smart home communications through federated learning.</p>
+        <div style="margin-top: 30px;">
+            <a href="{% url 'test_model' %}" 
+               style="text-decoration: none; padding: 15px 30px; background-color: #5cb85c; color: white; border-radius: 8px; font-weight: bold; font-size: 18px; transition: background-color 0.3s;">
+                Test the Model
+            </a>
+        </div>
+    </div>
 {% endblock %}

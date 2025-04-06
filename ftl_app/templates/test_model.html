@@ -1,275 +1,99 @@
-<!-- ftl_app/templates/test_model.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-    <h1>Test FTL Model</h1>
-    <form method="post">
-        {% csrf_token %}
-        <label>Number of Rounds: <input type="number" name="num_rounds" value="5"></label><br>
-        <label>Number of Devices: <input type="number" name="num_devices" value="3"></label><br>
-        <label>Noise Multiplier: <input type="number" step="0.1" name="noise_multiplier" value="1.1"></label><br>
-        <label>Mode: 
-            <select name="mode">
-                <option value="live">Live</option>
-                <option value="precomputed">Precomputed</option>
-            </select>
-        </label><br>
-        <button type="submit">Run Simulation</button>
-    </form>
+    <div style="max-width: 800px; margin: auto; padding: 40px; background-color: #fff; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="font-size: 32px; color: #333; font-weight: bold; text-align: center;">Test the Federated Learning Model</h2>
 
-    {% if accuracy %}
-        <h2>Results</h2>
-        <p>Accuracy: {{ accuracy|last|floatformat:4 }}</p>
-        <p>Loss: {{ loss|last|floatformat:4 }}</p>
-        <p>Privacy Leakage: {{ leakage|last|floatformat:4 }}</p>
-        <p>Latency: {{ latency|last|floatformat:2 }}s</p>
-        <p>Differential Privacy Epsilon: {{ epsilon|last|floatformat:2 }}</p>
-        <p>Inference Attack Success: {{ attack_success|floatformat:4 }}</p>
+        <form id="simulationForm" method="post" style="background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 20px;">
+                <label for="num_rounds" style="font-size: 16px;">Number of Rounds:</label>
+                <input type="number" id="num_rounds" name="num_rounds" value="5" style="padding: 8px; width: 100%; border-radius: 5px; border: 1px solid #ddd;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="num_devices" style="font-size: 16px;">Number of Devices:</label>
+                <input type="number" id="num_devices" name="num_devices" value="3" style="padding: 8px; width: 100%; border-radius: 5px; border: 1px solid #ddd;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="noise_multiplier" style="font-size: 16px;">Noise Multiplier:</label>
+                <input type="number" step="0.1" id="noise_multiplier" name="noise_multiplier" value="1.1" style="padding: 8px; width: 100%; border-radius: 5px; border: 1px solid #ddd;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="mode" style="font-size: 16px;">Mode:</label>
+                <select name="mode" id="mode" style="padding: 8px; width: 100%; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="live">Live</option>
+                    <option value="precomputed">Precomputed</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitBtn" style="padding: 10px 20px; background-color: #5cb85c; color: white; border-radius: 5px; font-weight: bold; width: 100%;">Run Simulation</button>
+        </form>
 
-        <!-- Visualization Containers -->
-        <div id="model-structure" class="chart"></div>
-        <div id="system-architecture" class="chart"></div>
-        <div id="chart-controls">
-            <button id="btn-acc-loss">Accuracy & Loss</button>
-            <button id="btn-privacy">Privacy Metrics</button>
-            <button id="btn-latency">Latency</button>
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 20px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">Running simulation...</p>
         </div>
-        <div id="results-chart" class="chart"></div>
 
-        <!-- D3.js Script -->
-        <script src="https://d3js.org/d3.v7.min.js"></script>
-        <script>
-            // Inline CSS for simplicity
-            const styles = `
-                body { font-family: Arial, sans-serif; }
-                .chart { margin: 20px; }
-                .axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
-                .line { fill: none; stroke-width: 2px; }
-                .bar { fill: steelblue; }
-                #chart-controls button { margin: 5px; padding: 5px 10px; cursor: pointer; }
-            `;
-            const styleSheet = document.createElement("style");
-            styleSheet.textContent = styles;
-            document.head.appendChild(styleSheet);
+        <!-- Show results button after simulation -->
+        {% if accuracy %}
+            <div id="resultsButton" style="text-align: center; margin-top: 40px;">
+                <button onclick="window.location.href='{% url 'view_results' %}'" style="padding: 10px 20px; background-color: #0275d8; color: white; border-radius: 5px; font-weight: bold;">
+                    View Results
+                </button>
+            </div>
+        {% else %}
+            <div id="resultsButton" style="display: none; text-align: center; margin-top: 40px;">
+                <button onclick="window.location.href='{% url 'view_results' %}'" style="padding: 10px 20px; background-color: #0275d8; color: white; border-radius: 5px; font-weight: bold;">
+                    View Results
+                </button>
+            </div>
+        {% endif %}
+    </div>
 
-            // Chart Setup
-            const width = 800, height = 400;
-            const margin = { top: 20, right: 80, bottom: 50, left: 50 };
-            const chartWidth = width - margin.left - margin.right;
-            const chartHeight = height - margin.top - margin.bottom;
+    <!-- Custom Spinner CSS -->
+    <style>
+        .spinner {
+            border: 4px solid #f3f3f3; /* Light grey background */
+            border-top: 4px solid #3498db; /* Blue spinner */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
 
-            // Fetch metrics from the fixed location
-            d3.json("{% static 'ftl_app/precomputed/metrics.json' %}", function(error, data) {
-                if (error) {
-                    console.error("Error loading metrics.json:", error);
-                    return;
-                }
+        /* Spinner Animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 
-                const rounds = Array.from({ length: data.accuracy.length }, (_, i) => i + 1);
-                const svg = d3.select("#results-chart")
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height)
-                    .append("g")
-                    .attr("transform", `translate(${margin.left},${margin.top})`);
+    <!-- JavaScript for Loading Animation -->
+    <script>
+        document.getElementById('simulationForm').addEventListener('submit', function(e) {
+            // Show loading spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            // Disable submit button to prevent multiple submissions
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Running...';
+        });
 
-                const x = d3.scaleLinear().domain([1, rounds.length]).range([0, chartWidth]);
-
-                // Function to update chart based on button click
-                function updateChart(type) {
-                    svg.selectAll("*").remove();
-
-                    svg.append("g")
-                        .attr("class", "axis")
-                        .attr("transform", `translate(0,${chartHeight})`)
-                        .call(d3.axisBottom(x).ticks(rounds.length))
-                        .append("text")
-                        .attr("fill", "#000")
-                        .attr("x", chartWidth / 2)
-                        .attr("y", 40)
-                        .attr("text-anchor", "middle")
-                        .text("Rounds");
-
-                    if (type === "acc-loss") {
-                        const y1 = d3.scaleLinear().domain([0, d3.max(data.accuracy) * 1.2]).range([chartHeight, 0]);
-                        const y2 = d3.scaleLinear().domain([0, d3.max(data.loss) * 1.2]).range([chartHeight, 0]);
-
-                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y1))
-                            .append("text")
-                            .attr("fill", "#000").attr("transform", "rotate(-90)")
-                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
-                            .text("Accuracy");
-
-                        svg.append("g").attr("class", "axis").attr("transform", `translate(${chartWidth},0)`)
-                            .call(d3.axisRight(y2))
-                            .append("text")
-                            .attr("fill", "#000").attr("transform", "rotate(-90)")
-                            .attr("y", -10).attr("dy", "-3em").attr("text-anchor", "end")
-                            .text("Loss");
-
-                        const lineAcc = d3.line().x((d, i) => x(rounds[i])).y(d => y1(d));
-                        const lineLoss = d3.line().x((d, i) => x(rounds[i])).y(d => y2(d));
-
-                        svg.append("path").datum(data.accuracy)
-                            .attr("class", "line").attr("stroke", "blue").attr("d", lineAcc);
-                        svg.append("path").datum(data.loss)
-                            .attr("class", "line").attr("stroke", "red").attr("d", lineLoss);
-
-                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
-                            .attr("text-anchor", "middle").attr("font-size", "16px")
-                            .text("Accuracy and Loss Over Rounds");
-                    } else if (type === "privacy") {
-                        const y1 = d3.scaleLinear().domain([0, d3.max(data.leakage) * 1.2]).range([chartHeight, 0]);
-                        const y2 = d3.scaleLinear().domain([0, d3.max(data.epsilon) * 1.2]).range([chartHeight, 0]);
-
-                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y1))
-                            .append("text")
-                            .attr("fill", "#000").attr("transform", "rotate(-90)")
-                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
-                            .text("Leakage");
-
-                        svg.append("g").attr("class", "axis").attr("transform", `translate(${chartWidth},0)`)
-                            .call(d3.axisRight(y2))
-                            .append("text")
-                            .attr("fill", "#000").attr("transform", "rotate(-90)")
-                            .attr("y", -10).attr("dy", "-3em").attr("text-anchor", "end")
-                            .text("Epsilon");
-
-                        const lineLeak = d3.line().x((d, i) => x(rounds[i])).y(d => y1(d));
-                        const lineEps = d3.line().x((d, i) => x(rounds[i])).y(d => y2(d));
-
-                        svg.append("path").datum(data.leakage)
-                            .attr("class", "line").attr("stroke", "green").attr("d", lineLeak);
-                        svg.append("path").datum(data.epsilon)
-                            .attr("class", "line").attr("stroke", "purple").attr("d", lineEps);
-
-                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
-                            .attr("text-anchor", "middle").attr("font-size", "16px")
-                            .text("Privacy Metrics Over Rounds");
-                    } else if (type === "latency") {
-                        const y = d3.scaleLinear().domain([0, d3.max(data.latency) * 1.2]).range([chartHeight, 0]);
-
-                        svg.append("g").attr("class", "axis").call(d3.axisLeft(y))
-                            .append("text")
-                            .attr("fill", "#000").attr("transform", "rotate(-90)")
-                            .attr("y", 6).attr("dy", "-3em").attr("text-anchor", "end")
-                            .text("Latency (seconds)");
-
-                        svg.selectAll(".bar").data(data.latency).enter().append("rect")
-                            .attr("class", "bar")
-                            .attr("x", (d, i) => x(rounds[i]) - (chartWidth / rounds.length) / 2)
-                            .attr("y", d => y(d))
-                            .attr("width", chartWidth / rounds.length - 5)
-                            .attr("height", d => chartHeight - y(d));
-
-                        svg.append("text").attr("x", chartWidth / 2).attr("y", -10)
-                            .attr("text-anchor", "middle").attr("font-size", "16px")
-                            .text("Latency Over Rounds");
-                    }
-                }
-
-                // Button event listeners
-                d3.select("#btn-acc-loss").on("click", () => updateChart("acc-loss"));
-                d3.select("#btn-privacy").on("click", () => updateChart("privacy"));
-                d3.select("#btn-latency").on("click", () => updateChart("latency"));
-
-                // Initial chart
-                updateChart("acc-loss");
-
-                // Model Structure Visualization
-                const modelSvg = d3.select("#model-structure").append("svg").attr("width", 700).attr("height", 300);
-                const modelData = [
-                    { id: "global", label: "Global Model (Server)", x: 350, y: 50 },
-                    { id: "local1", label: "Local Model 1 (Thermostat)", x: 150, y: 200 },
-                    { id: "local2", label: "Local Model 2 (Camera)", x: 300, y: 200 },
-                    { id: "local3", label: "Local Model 3 (Lock)", x: 450, y: 200 },
-                    { id: "local4", label: "Local Model 4 (Light)", x: 600, y: 200 }
-                ];
-                const modelLinks = [
-                    { source: "global", target: "local1" }, { source: "global", target: "local2" },
-                    { source: "global", target: "local3" }, { source: "global", target: "local4" },
-                    { source: "local1", target: "global" }, { source: "local2", target: "global" },
-                    { source: "local3", target: "global" }, { source: "local4", target: "global" }
-                ];
-                modelSvg.append("defs").append("marker").attr("id", "arrow").attr("viewBox", "0 -5 10 10")
-                    .attr("refX", 5).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6)
-                    .attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#999");
-
-                modelSvg.selectAll(".node").data(modelData).enter().append("g")
-                    .call(g => g.append("rect").attr("x", d => d.x - 80).attr("y", d => d.y - 20)
-                        .attr("width", 160).attr("height", 40)
-                        .attr("fill", d => d.id === "global" ? "#FFD700" : "#87CEEB").attr("stroke", "#000"))
-                    .call(g => g.append("text").attr("x", d => d.x).attr("y", d => d.y + 5)
-                        .attr("text-anchor", "middle").attr("font-size", "12px").text(d => d.label));
-
-                modelSvg.selectAll(".link").data(modelLinks).enter().append("path")
-                    .attr("d", d => {
-                        const s = modelData.find(n => n.id === d.source);
-                        const t = modelData.find(n => n.id === d.target);
-                        return `M${s.x},${s.y + 20} L${t.x},${t.y - 20}`;
-                    })
-                    .attr("stroke", "#999").attr("stroke-width", 1).attr("marker-end", "url(#arrow)");
-
-                modelSvg.append("text").attr("x", 350).attr("y", 20).attr("text-anchor", "middle")
-                    .attr("font-size", "16px").text("FTL Model Structure");
-
-                // System Architecture Visualization
-                const archSvg = d3.select("#system-architecture").append("svg").attr("width", 700).attr("height", 400);
-                const archData = [
-                    { id: "server", label: "Central Server\n(Global Model, FedAvg)", x: 500, y: 200 },
-                    { id: "device1", label: "Device 1 (Thermostat)", x: 100, y: 100 },
-                    { id: "device2", label: "Device 2 (Camera)", x: 100, y: 200 },
-                    { id: "device3", label: "Device 3 (Lock)", x: 100, y: 300 }
-                ];
-                const archLinks = [
-                    { source: "server", target: "device1", label: "Global Model" },
-                    { source: "server", target: "device2", label: "Global Model" },
-                    { source: "server", target: "device3", label: "Global Model" },
-                    { source: "device1", target: "server", label: "Encrypted Updates" },
-                    { source: "device2", target: "server", label: "Encrypted Updates" },
-                    { source: "device3", target: "server", label: "Encrypted Updates" }
-                ];
-                archSvg.append("defs").append("marker").attr("id", "arrow-arch").attr("viewBox", "0 -5 10 10")
-                    .attr("refX", 5).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6)
-                    .attr("orient", "auto").append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#999");
-
-                archSvg.selectAll(".node").data(archData).enter().append("g")
-                    .call(g => g.append("rect").attr("x", d => d.x - 80).attr("y", d => d.y - 30)
-                        .attr("width", 160).attr("height", 60)
-                        .attr("fill", d => d.id === "server" ? "#FFD700" : "#87CEEB").attr("stroke", "#000"))
-                    .call(g => g.append("text").attr("x", d => d.x).attr("y", d => d.y)
-                        .attr("text-anchor", "middle").attr("font-size", "12px").attr("dy", ".35em")
-                        .text(d => d.label.split("\n")[0])
-                        .append("tspan").attr("x", d => d.x).attr("dy", "1.2em")
-                        .text(d => d.label.split("\n")[1] || ""));
-
-                archSvg.selectAll(".link").data(archLinks).enter().append("g")
-                    .call(g => g.append("path")
-                        .attr("d", d => {
-                            const s = archData.find(n => n.id === d.source);
-                            const t = archData.find(n => n.id === d.target);
-                            return d.source === "server" 
-                                ? `M${s.x - 80},${s.y} L${t.x + 80},${t.y}`
-                                : `M${s.x + 80},${s.y} L${t.x - 80},${t.y}`;
-                        })
-                        .attr("stroke", "#999").attr("stroke-width", 1).attr("marker-end", "url(#arrow-arch)"))
-                    .call(g => g.append("text")
-                        .attr("x", d => {
-                            const s = archData.find(n => n.id === d.source);
-                            const t = archData.find(n => n.id === d.target);
-                            return (s.x + t.x) / 2;
-                        })
-                        .attr("y", d => {
-                            const s = archData.find(n => n.id === d.source);
-                            const t = archData.find(n => n.id === d.target);
-                            return (s.y + t.y) / 2 - 5;
-                        })
-                        .attr("text-anchor", "middle").attr("font-size", "10px")
-                        .text(d => d.label));
-
-                archSvg.append("text").attr("x", 350).attr("y", 20).attr("text-anchor", "middle")
-                    .attr("font-size", "16px").text("FTL System Architecture");
-            });
-        </script>
-    {% endif %}
+        // Note: The following should ideally be handled by your backend response
+        // This is a simplified front-end only demonstration
+        // In a real scenario, you'd hide the spinner and show results based on server response
+        window.addEventListener('load', function() {
+            {% if accuracy %}
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('resultsButton').style.display = 'block';
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').textContent = 'Run Simulation';
+            {% endif %}
+        });
+    </script>
 {% endblock %}

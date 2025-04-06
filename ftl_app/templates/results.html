@@ -1,0 +1,38 @@
+<!-- ftl_app/templates/test_model.html -->
+{% extends 'base.html' %}
+{% block content %}
+    <div style="max-width: 1000px; margin: auto; padding: 40px; background-color: #fff; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="font-size: 32px; color: #333; font-weight: bold; text-align: center;">Federated Learning Model Results</h2>
+
+        <div class="card" style="background-color: #e0f7fa; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #00796b; font-weight: bold;">Accuracy: {{ accuracy|last|floatformat:4 }}</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: Higher accuracy indicates better model performance. A value closer to 1 is ideal. In this case, a score of {{ accuracy|last|floatformat:4 }} suggests the model is performing at a good level.</p>
+        </div>
+
+        <div class="card" style="background-color: #ffe0b2; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #e65100; font-weight: bold;">Loss: {{ loss|last|floatformat:4 }}</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: Lower loss indicates the model is making fewer errors during training. A lower value of {{ loss|last|floatformat:4 }} is desirable as it shows the model has learned well.</p>
+        </div>
+
+        <div class="card" style="background-color: #f1f8e9; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #388e3c; font-weight: bold;">Privacy Leakage: {{ leakage|last|floatformat:4 }}</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: Lower privacy leakage indicates better privacy preservation. A value of {{ leakage|last|floatformat:4 }} suggests a controlled privacy leakage, which is a good sign.</p>
+        </div>
+
+        <div class="card" style="background-color: #fff3e0; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #f57c00; font-weight: bold;">Latency: {{ latency|last|floatformat:2 }}s</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: Lower latency is better for real-time applications. A latency of {{ latency|last|floatformat:2 }} seconds is considered acceptable for most practical uses.</p>
+        </div>
+
+        <div class="card" style="background-color: #f3e5f5; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #8e24aa; font-weight: bold;">Differential Privacy Epsilon: {{ epsilon|last|floatformat:2 }}</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: The epsilon value indicates the level of privacy protection. A lower value signifies better privacy protection. The value of {{ epsilon|last|floatformat:2 }} is a good balance between privacy and model accuracy.</p>
+        </div>
+
+        <div class="card" style="background-color: #ffebee; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; color: #d32f2f; font-weight: bold;">Inference Attack Success: {{ attack_success|floatformat:4 }}</h3>
+            <p style="font-size: 16px; color: #555;">Explanation: A lower inference attack success indicates better privacy protection. A value of {{ attack_success|floatformat:4 }} suggests the model is resistant to inference attacks, which is positive for user privacy.</p>
+        </div>
+
+    </div>
+{% endblock %}
