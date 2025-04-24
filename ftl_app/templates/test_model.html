@@ -36,7 +36,7 @@
         <!-- Loading Spinner -->
         <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 20px;">
             <div class="spinner"></div>
-            <p style="margin-top: 10px;">Running simulation...</p>
+            <p style="margin-top: 10px;">Model Training Please Wait...</p>
         </div>
 
         <!-- Show results button after simulation -->
@@ -81,7 +81,7 @@
             document.getElementById('loadingSpinner').style.display = 'block';
             // Disable submit button to prevent multiple submissions
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').textContent = 'Running...';
+            document.getElementById('submitBtn').textContent = 'Model Running...';
         });
 
         // Note: The following should ideally be handled by your backend response
